@@ -11,8 +11,8 @@ export default class BookingsRepository {
     return this.dao.getById(id);
   }
 
-  getAll() {
-    return this.dao.getAll();
+  getByIdRaw(id) {
+    return this.dao.getByIdRaw(id);
   }
 
   update(id, data) {

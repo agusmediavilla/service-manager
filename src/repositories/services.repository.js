@@ -3,8 +3,8 @@ export default class ServicesRepository {
     this.dao = dao;
   }
 
-  getAll(filters = {}) {
-    return this.dao.getAll(filters);
+  getAll(options) {
+    return this.dao.getAll(options);
   }
 
   getById(id) {

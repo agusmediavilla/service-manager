@@ -1,21 +1,70 @@
 import mongoose from 'mongoose';
 
+const ALLOWED_SORT_FIELDS = [
+  'name',
+  'duration',
+  'price',
+  'category',
+  'available',
+  'createdAt',
+  'updatedAt'
+];
+
 export default class ServicesService {
   constructor(repository) {
     this.repository = repository;
   }
 
-  async getServices(filters = {}) {
-    const mongoFilters = {};
+  async getServices(query = {}) {
+    const {
+      category,
+      available,
+      page = '1',
+      limit = '10',
+      sortBy = 'createdAt',
+      order = 'asc'
+    } = query;
 
-    if (filters.category) mongoFilters.category = filters.category;
+    const filters = {};
 
-    if (filters.available !== undefined) {
-      mongoFilters.available =
-        String(filters.available).toLowerCase() === 'true';
+    if (category) {
+      filters.category = category;
     }
 
-    return this.repository.getAll(mongoFilters);
+    if (available !== undefined) {
+      filters.available = String(available).toLowerCase() === 'true';
+    }
+
+    const currentPage = Math.max(Number(page) || 1, 1);
+    const currentLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+
+    const validSortBy = ALLOWED_SORT_FIELDS.includes(sortBy)
+      ? sortBy
+      : 'createdAt';
+
+    const validOrder = order === 'desc' ? 'desc' : 'asc';
+
+    const { docs, total } = await this.repository.getAll({
+      filters,
+      page: currentPage,
+      limit: currentLimit,
+      sortBy: validSortBy,
+      order: validOrder
+    });
+
+    const totalPages = total === 0 ? 0 : Math.ceil(total / currentLimit);
+
+    return {
+      payload: docs,
+      pagination: {
+        total,
+        page: currentPage,
+        limit: currentLimit,
+        totalPages,
+        hasPrevPage: currentPage > 1,
+        hasNextPage: currentPage < totalPages
+      }
+    };
   }
 
   async getServiceById(id) {
@@ -24,24 +73,7 @@ export default class ServicesService {
   }
 
   async createService(data) {
-    const requiredFields = [
-      'name','description','duration','price','category','available'
-    ];
-
-    const missing = requiredFields.filter(
-      field =>
-        !(field in data) ||
-        data[field] === undefined ||
-        data[field] === null ||
-        (typeof data[field] === 'string' && data[field].trim() === '')
-    );
-
-    if (missing.length) {
-      throw new Error(`Faltan campos obligatorios: ${missing.join(', ')}`);
-    }
-
-    const { id, _id, ...safeData } = data;
-    return this.repository.create(safeData);
+    return this.repository.create(data);
   }
 
   async updateService(id, data) {
@@ -50,8 +82,7 @@ export default class ServicesService {
     const existing = await this.repository.getById(id);
     if (!existing) return null;
 
-    const { id: ignoredId, _id: ignoredMongoId, ...safeData } = data;
-    return this.repository.update(id, safeData);
+    return this.repository.update(id, data);
   }
 
   async deleteService(id) {

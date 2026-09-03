@@ -1,18 +1,22 @@
-# Vistas con Handlebars y comunicación en tiempo real con Socket.io
+# Consultas avanzadas, validación y relaciones con populate
 
 Pre-entrega del **Sistema Backend de Turnos y Reservas**.
 
-Esta versión mantiene la API REST y la arquitectura en capas existente, y agrega:
+Esta versión profesionaliza la API incorporando:
 
-- vistas server-side con Handlebars;
-- archivos estáticos en `public`;
-- comunicación en tiempo real con Socket.io;
-- actualización automática de vistas ante acciones reales del sistema.
+- filtros avanzados;
+- paginación;
+- ordenamiento;
+- validación previa con Zod;
+- relaciones entre reservas y servicios mediante `ObjectId`;
+- consultas de reservas con `populate`.
 
 ## Arquitectura
 
 ```text
 routes
+  ↓
+middlewares de validación
   ↓
 controllers
   ↓
@@ -26,30 +30,6 @@ models
   ↓
 MongoDB Atlas
 ```
-
-Las vistas también obtienen sus datos respetando este flujo.
-
-## Estructura nueva
-
-```text
-src/
-├── controllers/
-│   └── views.controller.js
-├── routes/
-│   └── views.router.js
-├── views/
-│   ├── layouts/
-│   │   └── main.handlebars
-│   ├── services.handlebars
-│   └── availability.handlebars
-└── public/
-    ├── css/
-    │   └── styles.css
-    └── js/
-        └── socket.js
-```
-
-El resto de las capas de la API se conserva.
 
 ## Instalación
 
@@ -67,90 +47,226 @@ NODE_ENV=development
 MONGO_URI=mongodb+srv://USUARIO:PASSWORD@CLUSTER.mongodb.net/turnos
 ```
 
-No subir `.env` ni credenciales reales.
+No subir `.env`.
 
-## Ejecución
+---
 
-```bash
-npm start
-```
+# GET /api/services
 
-Modo desarrollo:
-
-```bash
-npm run dev
-```
-
-## Vistas
-
-### Servicios
+Acepta:
 
 ```text
-GET /views/services
+category
+available
+page
+limit
+sortBy
+order
 ```
 
-Renderiza desde MongoDB:
+## Ejemplos
 
-- nombre;
-- descripción;
-- duración;
-- precio;
-- categoría;
-- disponibilidad.
+Filtrar por categoría:
 
-### Disponibilidad y reservas
+```http
+GET /api/services?category=salud
+```
+
+Filtrar por disponibilidad:
+
+```http
+GET /api/services?available=true
+```
+
+Paginación:
+
+```http
+GET /api/services?page=2&limit=5
+```
+
+Ordenar por precio ascendente:
+
+```http
+GET /api/services?sortBy=price&order=asc
+```
+
+Ordenar por precio descendente:
+
+```http
+GET /api/services?sortBy=price&order=desc
+```
+
+Combinar consultas:
+
+```http
+GET /api/services?category=salud&available=true&page=1&limit=5&sortBy=price&order=asc
+```
+
+## Respuesta
+
+Ejemplo:
+
+```json
+{
+  "status": "success",
+  "payload": [],
+  "pagination": {
+    "total": 24,
+    "page": 1,
+    "limit": 5,
+    "totalPages": 5,
+    "hasPrevPage": false,
+    "hasNextPage": true
+  }
+}
+```
+
+---
+
+# Validaciones con Zod
+
+Se utilizan schemas independientes dentro de:
 
 ```text
-GET /views/availability
+src/validators/
 ```
 
-Muestra:
-
-- servicios actualmente disponibles;
-- reservas registradas en MongoDB.
-
-No hay datos hardcodeados en los archivos Handlebars.
-
-## Socket.io
-
-Socket.io se configura sobre el servidor HTTP.
-
-El archivo:
+y middleware:
 
 ```text
-src/public/js/socket.js
+src/middlewares/validate.middleware.js
 ```
 
-escucha eventos reales del sistema.
+Las validaciones se ejecutan antes de llegar al controller y antes de acceder a MongoDB.
 
-### Crear un servicio
+## Crear servicio
 
-Cuando se ejecuta:
+Valida:
 
 ```text
-POST /api/services
+name
+description
+duration
+price
+category
+available
 ```
 
-y el servicio se crea correctamente en MongoDB, el controller emite:
+## Actualizar servicio
+
+Permite únicamente:
 
 ```text
-serviceCreated
+name
+description
+duration
+price
+category
+available
 ```
 
-La vista `/views/services` recibe ese evento y agrega el nuevo servicio sin recargar el navegador.
+No permite `_id` ni campos desconocidos.
 
-También se incluyen:
+## Crear reserva
+
+Valida:
 
 ```text
-serviceUpdated
-serviceDeleted
-bookingCreated
-bookingUpdated
+clientName
+clientEmail
+date
+time
+status
 ```
 
-## API REST
+Además valida formato correcto de email.
 
-La API sigue funcionando:
+## Agregar servicio a reserva
+
+Valida los parámetros:
+
+```text
+bid
+sid
+```
+
+Si la validación falla, responde:
+
+```http
+400 Bad Request
+```
+
+con un mensaje descriptivo.
+
+---
+
+# Reservas y populate
+
+Las reservas guardan servicios así:
+
+```js
+services: [
+  {
+    service: ObjectId,
+    quantity: Number
+  }
+]
+```
+
+No se guarda el objeto completo.
+
+Cuando se consulta:
+
+```http
+GET /api/bookings/:bid
+```
+
+el DAO utiliza:
+
+```js
+.populate({
+  path: 'services.service',
+  select: 'name description duration price category available'
+})
+```
+
+Por lo tanto la respuesta contiene los datos completos del servicio asociado.
+
+Ejemplo conceptual:
+
+```json
+{
+  "status": "success",
+  "payload": {
+    "_id": "BOOKING_ID",
+    "clientName": "Juan Pérez",
+    "clientEmail": "juan@email.com",
+    "date": "2026-09-10",
+    "time": "10:00",
+    "status": "pending",
+    "services": [
+      {
+        "service": {
+          "_id": "SERVICE_ID",
+          "name": "Consulta general",
+          "description": "Consulta de 30 minutos",
+          "duration": 30,
+          "price": 15000,
+          "category": "salud",
+          "available": true
+        },
+        "quantity": 2
+      }
+    ]
+  }
+}
+```
+
+---
+
+# Endpoints existentes
+
+Se mantienen:
 
 ```text
 GET    /api/services
@@ -163,18 +279,6 @@ POST   /api/bookings
 GET    /api/bookings/:bid
 POST   /api/bookings/:bid/services/:sid
 ```
-
-## Modelos Mongoose
-
-Se mantienen:
-
-```text
-service.model.js
-booking.model.js
-message.model.js
-```
-
-Las reservas referencian servicios mediante `ObjectId`.
 
 ## GitHub
 

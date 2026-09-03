@@ -7,7 +7,12 @@ const bookingServiceSchema = new mongoose.Schema(
       ref: 'Service',
       required: true
     },
-    quantity: { type: Number, required: true, default: 1, min: 1 }
+    quantity: {
+      type: Number,
+      required: true,
+      default: 1,
+      min: 1
+    }
   },
   { _id: false }
 );

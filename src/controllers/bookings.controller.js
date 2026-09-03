@@ -13,27 +13,38 @@ export const createBooking = async (req, res) => {
   try {
     const data = await service.createBooking(req.body);
 
-    const io = req.app.get('io');
-    if (io) io.emit('bookingCreated', data);
-
-    return res.status(201).json({ status: 'success', payload: data });
+    return res.status(201).json({
+      status: 'success',
+      payload: data
+    });
   } catch (error) {
-    return res.status(400).json({ status: 'error', message: error.message });
+    return res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
 };
 
 export const getBookingById = async (req, res) => {
   try {
     const data = await service.getBookingById(req.params.bid);
+
     if (!data) {
       return res.status(404).json({
         status: 'error',
         message: 'Reserva no encontrada'
       });
     }
-    return res.status(200).json({ status: 'success', payload: data });
+
+    return res.status(200).json({
+      status: 'success',
+      payload: data
+    });
   } catch (error) {
-    return res.status(500).json({ status: 'error', message: error.message });
+    return res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
 };
 
@@ -58,14 +69,14 @@ export const addServiceToBooking = async (req, res) => {
       });
     }
 
-    const io = req.app.get('io');
-    if (io) io.emit('bookingUpdated', result.data);
-
     return res.status(200).json({
       status: 'success',
       payload: result.data
     });
   } catch (error) {
-    return res.status(500).json({ status: 'error', message: error.message });
+    return res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
 };

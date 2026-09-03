@@ -7,11 +7,16 @@ export default class BookingsDAO {
   }
 
   async getById(id) {
-    return BookingModel.findById(id).lean();
+    return BookingModel.findById(id)
+      .populate({
+        path: 'services.service',
+        select: 'name description duration price category available'
+      })
+      .lean();
   }
 
-  async getAll() {
-    return BookingModel.find().sort({ createdAt: -1 }).lean();
+  async getByIdRaw(id) {
+    return BookingModel.findById(id).lean();
   }
 
   async update(id, data) {

@@ -7,28 +7,8 @@ export default class BookingsService {
   }
 
   async createBooking(data) {
-    const requiredFields = [
-      'clientName','clientEmail','date','time','status'
-    ];
-
-    const missing = requiredFields.filter(
-      field =>
-        !(field in data) ||
-        data[field] === undefined ||
-        data[field] === null ||
-        (typeof data[field] === 'string' && data[field].trim() === '')
-    );
-
-    if (missing.length) {
-      throw new Error(`Faltan campos obligatorios: ${missing.join(', ')}`);
-    }
-
     return this.bookingsRepository.create({
-      clientName: data.clientName,
-      clientEmail: data.clientEmail,
-      date: data.date,
-      time: data.time,
-      status: data.status,
+      ...data,
       services: []
     });
   }
@@ -36,10 +16,6 @@ export default class BookingsService {
   async getBookingById(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) return null;
     return this.bookingsRepository.getById(id);
-  }
-
-  async getBookings() {
-    return this.bookingsRepository.getAll();
   }
 
   async addServiceToBooking(bookingId, serviceId) {
@@ -51,11 +27,17 @@ export default class BookingsService {
       return { type: 'service_not_found', data: null };
     }
 
-    const booking = await this.bookingsRepository.getById(bookingId);
-    if (!booking) return { type: 'booking_not_found', data: null };
+    const booking = await this.bookingsRepository.getByIdRaw(bookingId);
+
+    if (!booking) {
+      return { type: 'booking_not_found', data: null };
+    }
 
     const service = await this.servicesRepository.getById(serviceId);
-    if (!service) return { type: 'service_not_found', data: null };
+
+    if (!service) {
+      return { type: 'service_not_found', data: null };
+    }
 
     const existing = booking.services.find(
       item => item.service.toString() === serviceId
@@ -64,7 +46,10 @@ export default class BookingsService {
     if (existing) {
       existing.quantity += 1;
     } else {
-      booking.services.push({ service: serviceId, quantity: 1 });
+      booking.services.push({
+        service: serviceId,
+        quantity: 1
+      });
     }
 
     const updated = await this.bookingsRepository.update(
