@@ -2,19 +2,19 @@
   {
     "id": 1,
     "name": "Consulta general",
-    "description": "Consulta inicial para evaluar las necesidades del cliente.",
+    "description": "Consulta inicial de evaluación",
     "duration": 30,
-    "price": 15000,
-    "category": "Consultas",
+    "price": 12000,
+    "category": "salud",
     "available": true
   },
   {
     "id": 2,
-    "name": "Sesión extendida",
-    "description": "Sesión de atención extendida con una duración de una hora.",
-    "duration": 60,
-    "price": 25000,
-    "category": "Sesiones",
+    "name": "Sesión de fisioterapia",
+    "description": "Sesión individual de rehabilitación",
+    "duration": 45,
+    "price": 15000,
+    "category": "rehabilitacion",
     "available": true
   }
 ]

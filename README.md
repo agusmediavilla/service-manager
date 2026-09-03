@@ -1,47 +1,16 @@
-# Service Manager - Pre-entrega Node.js
+# Diseño de endpoints REST para servicios
 
-Proyecto desarrollado con **Node.js** y **ECMAScript Modules (ESM)** para administrar los servicios de un sistema de turnos y reservas.
-
-La aplicación implementa una clase `ServiceManager` que permite consultar, agregar, modificar y eliminar servicios almacenados en un archivo JSON.
+API REST desarrollada con Node.js y Express para gestionar el recurso `services` de un sistema de turnos y reservas.
 
 ## Tecnologías
 
 - Node.js
-- JavaScript ES Modules
+- Express
+- ESM (`import` / `export`)
 - dotenv
-- File System (`fs/promises`)
-- JSON
-
-## Estructura del proyecto
-
-```text
-service-manager-preentrega/
-├── src/
-│   ├── config/
-│   │   └── env.config.js
-│   ├── managers/
-│   │   └── ServiceManager.js
-│   ├── data/
-│   │   └── services.json
-│   └── app.js
-├── package.json
-├── .env.example
-├── .gitignore
-└── README.md
-```
-
-> El archivo `.env` se utiliza localmente pero no debe subirse al repositorio.
+- FileSystem con archivo JSON
 
 ## Instalación
-
-Clonar el repositorio:
-
-```bash
-git clone URL_DEL_REPOSITORIO
-cd service-manager-preentrega
-```
-
-Instalar las dependencias:
 
 ```bash
 npm install
@@ -49,31 +18,22 @@ npm install
 
 ## Variables de entorno
 
-Crear un archivo `.env` en la raíz del proyecto tomando como referencia `.env.example`.
+Crear un archivo `.env` en la raíz del proyecto con:
 
 ```env
 PORT=8080
 NODE_ENV=development
 ```
 
-Variables requeridas:
-
-| Variable | Descripción |
-| --- | --- |
-| `PORT` | Puerto configurado para la aplicación. |
-| `NODE_ENV` | Entorno de ejecución, por ejemplo `development`. |
-
-El archivo `src/config/env.config.js` verifica estas variables al iniciar. Si falta alguna, la aplicación finaliza mostrando un mensaje de error.
+El archivo `.env` no debe subirse al repositorio. Se incluye `.env.example` como referencia.
 
 ## Ejecución
-
-Modo normal:
 
 ```bash
 npm start
 ```
 
-Modo desarrollo con reinicio automático de Node.js:
+Modo desarrollo:
 
 ```bash
 npm run dev
@@ -81,128 +41,110 @@ npm run dev
 
 ## Recurso `services`
 
-Cada servicio posee la siguiente estructura:
+Cada servicio tiene la siguiente estructura:
 
-```js
+```json
 {
-  id,
-  name,
-  description,
-  duration,
-  price,
-  category,
-  available
+  "id": 1,
+  "name": "Consulta general",
+  "description": "Consulta inicial de evaluación",
+  "duration": 30,
+  "price": 12000,
+  "category": "salud",
+  "available": true
 }
+```
+
+El `id` se genera automáticamente al crear un servicio.
+
+## Endpoints
+
+### Obtener todos los servicios
+
+```http
+GET /api/services
+```
+
+Filtros disponibles:
+
+```http
+GET /api/services?category=salud
+GET /api/services?available=true
+GET /api/services?category=salud&available=true
+```
+
+### Obtener un servicio por ID
+
+```http
+GET /api/services/:sid
+```
+
+Devuelve `200` si existe y `404` si no existe.
+
+### Crear un servicio
+
+```http
+POST /api/services
+Content-Type: application/json
+```
+
+Ejemplo de body:
+
+```json
+{
+  "name": "Masaje deportivo",
+  "description": "Sesión de recuperación muscular",
+  "duration": 60,
+  "price": 20000,
+  "category": "bienestar",
+  "available": true
+}
+```
+
+No se debe enviar `id`. El servidor lo genera automáticamente.
+
+Devuelve `201` si se crea correctamente y `400` si faltan campos obligatorios.
+
+### Actualizar un servicio
+
+```http
+PUT /api/services/:sid
+Content-Type: application/json
 ```
 
 Ejemplo:
 
 ```json
 {
-  "id": 1,
-  "name": "Consulta general",
-  "description": "Consulta inicial para evaluar las necesidades del cliente.",
-  "duration": 30,
-  "price": 15000,
-  "category": "Consultas",
-  "available": true
+  "price": 22000,
+  "available": false
 }
 ```
 
-## ServiceManager
+Si se envía un campo `id`, el manager lo ignora y conserva el identificador original.
 
-Importación:
-
-```js
-import ServiceManager from './managers/ServiceManager.js';
-
-const serviceManager = new ServiceManager();
-```
-
-### Obtener todos los servicios
-
-```js
-const services = await serviceManager.getServices();
-console.log(services);
-```
-
-### Obtener un servicio por ID
-
-```js
-const service = await serviceManager.getServiceById(1);
-
-if (!service) {
-  console.log('Servicio no encontrado');
-} else {
-  console.log(service);
-}
-```
-
-### Agregar un servicio
-
-El ID se genera automáticamente dentro de `ServiceManager`. No debe enviarse desde afuera.
-
-```js
-const newService = await serviceManager.addService({
-  name: 'Corte de cabello',
-  description: 'Servicio de corte de cabello personalizado.',
-  duration: 45,
-  price: 18000,
-  category: 'Peluquería',
-  available: true,
-});
-
-console.log(newService);
-```
-
-Los campos obligatorios son:
-
-- `name`
-- `description`
-- `duration`
-- `price`
-- `category`
-- `available`
-
-Si falta alguno, el método genera un error indicando cuáles son los campos faltantes.
-
-### Actualizar un servicio
-
-```js
-const updatedService = await serviceManager.updateService(1, {
-  price: 20000,
-  available: false,
-});
-
-if (!updatedService) {
-  console.log('Servicio no encontrado');
-} else {
-  console.log(updatedService);
-}
-```
-
-Aunque se envíe un campo `id` dentro de `updatedData`, el método no modifica el identificador original.
+Devuelve `200` si existe y `404` si no existe.
 
 ### Eliminar un servicio
 
-```js
-const deletedService = await serviceManager.deleteService(1);
-
-if (!deletedService) {
-  console.log('Servicio no encontrado');
-} else {
-  console.log('Servicio eliminado:', deletedService);
-}
+```http
+DELETE /api/services/:sid
 ```
 
-## Consideraciones para la entrega
+Devuelve `200` si se elimina y `404` si el servicio no existe.
 
-El repositorio público de GitHub no debe incluir:
+## Organización
+
+- `src/routes/services.router.js`: define los endpoints y utiliza `req.params`, `req.query` y `req.body`.
+- `src/managers/ServiceManager.js`: contiene la lógica de gestión y persistencia de servicios.
+- `src/app.js`: configura Express y monta el router.
+- `src/server.js`: levanta el servidor usando el puerto definido en `.env`.
+- `src/config/env.config.js`: carga y valida las variables de entorno.
+
+## GitHub
+
+No subir al repositorio:
 
 - `node_modules/`
 - `.env`
 - credenciales reales
-
-Estos archivos están contemplados en `.gitignore`.
-
-El archivo `.env.example` sí debe subirse al repositorio porque documenta las variables de entorno necesarias sin exponer valores locales.

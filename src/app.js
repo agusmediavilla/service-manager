@@ -1,18 +1,16 @@
-import config from './config/env.config.js';
-import ServiceManager from './managers/ServiceManager.js';
+import express from 'express';
+import servicesRouter from './routes/services.router.js';
 
-const serviceManager = new ServiceManager();
+const app = express();
 
-const main = async () => {
-  console.log(`Aplicación iniciada en modo: ${config.nodeEnv}`);
-  console.log(`Puerto configurado: ${config.port}`);
+app.use(express.json());
+app.use('/api/services', servicesRouter);
 
-  const services = await serviceManager.getServices();
-  console.log('Servicios disponibles:');
-  console.table(services);
-};
-
-main().catch((error) => {
-  console.error('Error al iniciar la aplicación:', error.message);
-  process.exit(1);
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'API de servicios funcionando',
+  });
 });
+
+export default app;

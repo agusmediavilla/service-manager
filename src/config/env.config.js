@@ -2,25 +2,26 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const requiredEnvVariables = ['PORT', 'NODE_ENV'];
-
-const missingVariables = requiredEnvVariables.filter(
-  (variable) => !process.env[variable]
-);
+const requiredVariables = ['PORT', 'NODE_ENV'];
+const missingVariables = requiredVariables.filter((variable) => !process.env[variable]);
 
 if (missingVariables.length > 0) {
-  throw new Error(
-    `Faltan variables de entorno requeridas: ${missingVariables.join(', ')}`
+  console.error(
+    `Error de configuración: faltan variables de entorno requeridas: ${missingVariables.join(', ')}`
   );
+  process.exit(1);
 }
 
-const config = {
-  port: Number(process.env.PORT),
+const port = Number(process.env.PORT);
+
+if (Number.isNaN(port)) {
+  console.error('Error de configuración: PORT debe ser un número válido.');
+  process.exit(1);
+}
+
+const env = {
+  port,
   nodeEnv: process.env.NODE_ENV,
 };
 
-if (Number.isNaN(config.port)) {
-  throw new Error('La variable PORT debe ser un número válido.');
-}
-
-export default config;
+export default env;
