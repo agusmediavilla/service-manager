@@ -1,56 +1,55 @@
-# Migración a MongoDB con Mongoose
+# Vistas con Handlebars y comunicación en tiempo real con Socket.io
 
 Pre-entrega del **Sistema Backend de Turnos y Reservas**.
 
-Esta versión migra la persistencia desde archivos JSON hacia **MongoDB Atlas** utilizando **Mongoose**, manteniendo los mismos endpoints y la arquitectura en capas.
+Esta versión mantiene la API REST y la arquitectura en capas existente, y agrega:
+
+- vistas server-side con Handlebars;
+- archivos estáticos en `public`;
+- comunicación en tiempo real con Socket.io;
+- actualización automática de vistas ante acciones reales del sistema.
 
 ## Arquitectura
 
 ```text
-Route
+routes
   ↓
-Controller
+controllers
   ↓
-Service
+services
   ↓
-Repository
+repositories
   ↓
 DAO
   ↓
-Mongoose / MongoDB Atlas
+models
+  ↓
+MongoDB Atlas
 ```
 
-La migración cambia únicamente la persistencia. La API mantiene el mismo comportamiento externo.
+Las vistas también obtienen sus datos respetando este flujo.
 
-## Estructura
+## Estructura nueva
 
 ```text
 src/
-├── config/
-│   ├── env.config.js
-│   └── db.config.js
 ├── controllers/
-│   ├── services.controller.js
-│   └── bookings.controller.js
-├── services/
-│   ├── services.service.js
-│   └── bookings.service.js
-├── repositories/
-│   ├── services.repository.js
-│   └── bookings.repository.js
-├── dao/
-│   ├── services.dao.js
-│   └── bookings.dao.js
-├── models/
-│   ├── service.model.js
-│   ├── booking.model.js
-│   └── message.model.js
+│   └── views.controller.js
 ├── routes/
-│   ├── services.router.js
-│   └── bookings.router.js
-├── app.js
-└── server.js
+│   └── views.router.js
+├── views/
+│   ├── layouts/
+│   │   └── main.handlebars
+│   ├── services.handlebars
+│   └── availability.handlebars
+└── public/
+    ├── css/
+    │   └── styles.css
+    └── js/
+        └── socket.js
 ```
+
+El resto de las capas de la API se conserva.
 
 ## Instalación
 
@@ -60,7 +59,7 @@ npm install
 
 ## Variables de entorno
 
-Crear un archivo `.env`:
+Crear `.env`:
 
 ```env
 PORT=8080
@@ -68,164 +67,7 @@ NODE_ENV=development
 MONGO_URI=mongodb+srv://USUARIO:PASSWORD@CLUSTER.mongodb.net/turnos
 ```
 
-No subir `.env` al repositorio.
-
-`.env.example` contiene únicamente los nombres de las variables:
-
-```env
-PORT=
-NODE_ENV=
-MONGO_URI=
-```
-
-## MongoDB Atlas
-
-Para ejecutar el proyecto se necesita una base de datos de MongoDB Atlas.
-
-Pasos generales:
-
-1. Crear un cluster.
-2. Crear un usuario de base de datos.
-3. Configurar Network Access.
-4. Copiar la connection string.
-5. Guardarla en `MONGO_URI` dentro de `.env`.
-
-Nunca guardar la URI real dentro del código o del repositorio.
-
-## Modelos
-
-### Service
-
-Campos:
-
-```text
-name
-description
-duration
-price
-category
-available
-```
-
-MongoDB genera `_id` automáticamente.
-
-### Booking
-
-Campos:
-
-```text
-clientName
-clientEmail
-date
-time
-status
-services
-```
-
-Los servicios se almacenan como referencias:
-
-```js
-services: [
-  {
-    service: ObjectId,
-    quantity: Number
-  }
-]
-```
-
-El campo `service` referencia al modelo `Service`.
-
-### Message
-
-Modelo separado requerido para el recurso `messages`.
-
-Campos:
-
-```text
-user
-message
-```
-
-## Endpoints de services
-
-```text
-GET    /api/services
-GET    /api/services/:sid
-POST   /api/services
-PUT    /api/services/:sid
-DELETE /api/services/:sid
-```
-
-Filtros disponibles:
-
-```text
-GET /api/services?category=salud
-GET /api/services?available=true
-```
-
-## Endpoints de bookings
-
-```text
-POST /api/bookings
-GET  /api/bookings/:bid
-POST /api/bookings/:bid/services/:sid
-```
-
-## Regla de negocio de reservas
-
-Cuando se agrega un servicio a una reserva:
-
-1. se valida que exista la reserva;
-2. se valida que exista el servicio;
-3. se almacena únicamente su `ObjectId`;
-4. si ese servicio ya estaba en la reserva, se incrementa `quantity`.
-
-Ejemplo:
-
-```json
-{
-  "services": [
-    {
-      "service": "66a123456789abcdef123456",
-      "quantity": 2
-    }
-  ]
-}
-```
-
-La lógica de incremento permanece en:
-
-```text
-src/services/bookings.service.js
-```
-
-No está implementada en el DAO.
-
-## Separación de responsabilidades
-
-### Routes
-
-Definen los endpoints.
-
-### Controllers
-
-Trabajan con `req` y `res`.
-
-### Services
-
-Contienen reglas de negocio.
-
-### Repositories
-
-Desacoplan la lógica de negocio de la persistencia.
-
-### DAO
-
-Utilizan los modelos de Mongoose para consultar MongoDB.
-
-### Models
-
-Definen los schemas y modelos de Mongoose.
+No subir `.env` ni credenciales reales.
 
 ## Ejecución
 
@@ -238,6 +80,101 @@ Modo desarrollo:
 ```bash
 npm run dev
 ```
+
+## Vistas
+
+### Servicios
+
+```text
+GET /views/services
+```
+
+Renderiza desde MongoDB:
+
+- nombre;
+- descripción;
+- duración;
+- precio;
+- categoría;
+- disponibilidad.
+
+### Disponibilidad y reservas
+
+```text
+GET /views/availability
+```
+
+Muestra:
+
+- servicios actualmente disponibles;
+- reservas registradas en MongoDB.
+
+No hay datos hardcodeados en los archivos Handlebars.
+
+## Socket.io
+
+Socket.io se configura sobre el servidor HTTP.
+
+El archivo:
+
+```text
+src/public/js/socket.js
+```
+
+escucha eventos reales del sistema.
+
+### Crear un servicio
+
+Cuando se ejecuta:
+
+```text
+POST /api/services
+```
+
+y el servicio se crea correctamente en MongoDB, el controller emite:
+
+```text
+serviceCreated
+```
+
+La vista `/views/services` recibe ese evento y agrega el nuevo servicio sin recargar el navegador.
+
+También se incluyen:
+
+```text
+serviceUpdated
+serviceDeleted
+bookingCreated
+bookingUpdated
+```
+
+## API REST
+
+La API sigue funcionando:
+
+```text
+GET    /api/services
+GET    /api/services/:sid
+POST   /api/services
+PUT    /api/services/:sid
+DELETE /api/services/:sid
+
+POST   /api/bookings
+GET    /api/bookings/:bid
+POST   /api/bookings/:bid/services/:sid
+```
+
+## Modelos Mongoose
+
+Se mantienen:
+
+```text
+service.model.js
+booking.model.js
+message.model.js
+```
+
+Las reservas referencian servicios mediante `ObjectId`.
 
 ## GitHub
 

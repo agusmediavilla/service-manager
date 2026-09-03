@@ -1,0 +1,34 @@
+<section>
+  <h2>Disponibilidad</h2>
+
+  <h3>Servicios disponibles</h3>
+  <div class="grid">
+    {{#each availableServices}}
+      <article class="card">
+        <h4>{{this.name}}</h4>
+        <p>{{this.description}}</p>
+        <p><strong>Duración:</strong> {{this.duration}} minutos</p>
+        <p><strong>Precio:</strong> ${{this.price}}</p>
+        <p><strong>Categoría:</strong> {{this.category}}</p>
+      </article>
+    {{else}}
+      <p>No hay servicios disponibles.</p>
+    {{/each}}
+  </div>
+
+  <h3>Reservas registradas</h3>
+  <div id="bookings-list" class="grid">
+    {{#each bookings}}
+      <article class="card" id="booking-{{this._id}}">
+        <h4>{{this.clientName}}</h4>
+        <p>{{this.clientEmail}}</p>
+        <p><strong>Fecha:</strong> {{this.date}}</p>
+        <p><strong>Hora:</strong> {{this.time}}</p>
+        <p><strong>Estado:</strong> {{this.status}}</p>
+        <p><strong>Servicios asociados:</strong> {{this.services.length}}</p>
+      </article>
+    {{else}}
+      <p id="empty-bookings">No hay reservas cargadas.</p>
+    {{/each}}
+  </div>
+</section>

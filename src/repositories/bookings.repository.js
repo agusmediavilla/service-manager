@@ -3,15 +3,19 @@ export default class BookingsRepository {
     this.dao = dao;
   }
 
-  async create(data) {
+  create(data) {
     return this.dao.create(data);
   }
 
-  async getById(id) {
+  getById(id) {
     return this.dao.getById(id);
   }
 
-  async update(id, data) {
+  getAll() {
+    return this.dao.getAll();
+  }
+
+  update(id, data) {
     return this.dao.update(id, data);
   }
 }

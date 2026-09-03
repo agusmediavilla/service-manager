@@ -1,0 +1,28 @@
+<section>
+  <h2>Servicios</h2>
+  <p>Listado obtenido desde MongoDB.</p>
+
+  <div id="services-list" class="grid">
+    {{#each services}}
+      <article class="card" id="service-{{this._id}}">
+        <h3>{{this.name}}</h3>
+        <p>{{this.description}}</p>
+        <dl>
+          <dt>Duración</dt>
+          <dd>{{this.duration}} minutos</dd>
+
+          <dt>Precio</dt>
+          <dd>${{this.price}}</dd>
+
+          <dt>Categoría</dt>
+          <dd>{{this.category}}</dd>
+
+          <dt>Disponible</dt>
+          <dd>{{#if this.available}}Sí{{else}}No{{/if}}</dd>
+        </dl>
+      </article>
+    {{else}}
+      <p id="empty-services">No hay servicios cargados.</p>
+    {{/each}}
+  </div>
+</section>

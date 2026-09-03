@@ -8,12 +8,11 @@ export default class ServicesService {
   async getServices(filters = {}) {
     const mongoFilters = {};
 
-    if (filters.category) {
-      mongoFilters.category = filters.category;
-    }
+    if (filters.category) mongoFilters.category = filters.category;
 
     if (filters.available !== undefined) {
-      mongoFilters.available = String(filters.available).toLowerCase() === 'true';
+      mongoFilters.available =
+        String(filters.available).toLowerCase() === 'true';
     }
 
     return this.repository.getAll(mongoFilters);
@@ -24,49 +23,34 @@ export default class ServicesService {
     return this.repository.getById(id);
   }
 
-  async createService(serviceData) {
+  async createService(data) {
     const requiredFields = [
-      'name',
-      'description',
-      'duration',
-      'price',
-      'category',
-      'available'
+      'name','description','duration','price','category','available'
     ];
 
-    const missingFields = requiredFields.filter(
+    const missing = requiredFields.filter(
       field =>
-        !(field in serviceData) ||
-        serviceData[field] === undefined ||
-        serviceData[field] === null ||
-        (typeof serviceData[field] === 'string' && serviceData[field].trim() === '')
+        !(field in data) ||
+        data[field] === undefined ||
+        data[field] === null ||
+        (typeof data[field] === 'string' && data[field].trim() === '')
     );
 
-    if (missingFields.length > 0) {
-      throw new Error(`Faltan campos obligatorios: ${missingFields.join(', ')}`);
+    if (missing.length) {
+      throw new Error(`Faltan campos obligatorios: ${missing.join(', ')}`);
     }
 
-    const {
-      id,
-      _id,
-      ...safeData
-    } = serviceData;
-
+    const { id, _id, ...safeData } = data;
     return this.repository.create(safeData);
   }
 
-  async updateService(id, updatedData) {
+  async updateService(id, data) {
     if (!mongoose.Types.ObjectId.isValid(id)) return null;
 
-    const existingService = await this.repository.getById(id);
-    if (!existingService) return null;
+    const existing = await this.repository.getById(id);
+    if (!existing) return null;
 
-    const {
-      id: ignoredId,
-      _id: ignoredMongoId,
-      ...safeData
-    } = updatedData;
-
+    const { id: ignoredId, _id: ignoredMongoId, ...safeData } = data;
     return this.repository.update(id, safeData);
   }
 

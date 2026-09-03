@@ -1,0 +1,63 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+.header {
+  background: #1f2937;
+  color: white;
+  padding: 20px;
+}
+
+.header h1 {
+  margin-top: 0;
+}
+
+.header nav {
+  display: flex;
+  gap: 16px;
+}
+
+.header a {
+  color: white;
+  text-decoration: none;
+}
+
+.container {
+  width: min(1100px, 92%);
+  margin: 30px auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card h3,
+.card h4 {
+  margin-top: 0;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+}
+
+dt {
+  font-weight: bold;
+}

@@ -9,19 +9,16 @@ export default class ServicesDAO {
     return ServiceModel.findById(id).lean();
   }
 
-  async create(serviceData) {
-    const service = await ServiceModel.create(serviceData);
+  async create(data) {
+    const service = await ServiceModel.create(data);
     return service.toObject();
   }
 
-  async update(id, updatedData) {
+  async update(id, data) {
     return ServiceModel.findByIdAndUpdate(
       id,
-      updatedData,
-      {
-        new: true,
-        runValidators: true
-      }
+      data,
+      { new: true, runValidators: true }
     ).lean();
   }
 
