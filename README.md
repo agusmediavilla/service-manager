@@ -1,21 +1,66 @@
-# Organización de la API con Routers y Controllers
+# Refactor del proyecto con arquitectura en capas, DAO y Repository
 
-Pre-entrega del Sistema Backend de Turnos y Reservas.
+Pre-entrega del **Sistema Backend de Turnos y Reservas**.
 
-El objetivo de esta versión es reorganizar la API separando responsabilidades entre:
+Esta versión reorganiza la API existente utilizando una arquitectura en capas para desacoplar la lógica HTTP, las reglas de negocio y la persistencia.
 
-- **Routes**: definen los endpoints.
-- **Controllers**: reciben `req`, llaman a los managers y responden con `res`.
-- **Managers**: manejan la lógica de datos y la persistencia en archivos JSON.
+## Flujo de la aplicación
 
-## Tecnologías
+```text
+Router
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Repository
+  ↓
+DAO
+  ↓
+Archivo JSON
+```
 
-- Node.js
-- Express
-- ESM
-- dotenv
-- FileSystem con `fs/promises`
-- JSON
+## Responsabilidad de cada capa
+
+### Router
+
+Define las URLs y los métodos HTTP y los conecta con un controller.
+
+No contiene reglas de negocio ni acceso a archivos.
+
+### Controller
+
+Lee información de:
+
+- `req.params`
+- `req.query`
+- `req.body`
+
+Llama a la capa Service y construye la respuesta HTTP mediante `res.status().json()`.
+
+### Service
+
+Contiene las reglas de negocio.
+
+No utiliza `req` ni `res` y tampoco accede directamente a archivos JSON.
+
+Ejemplos:
+
+- validación de campos obligatorios;
+- generación automática de IDs;
+- protección del `id` al actualizar un servicio;
+- validación de reserva y servicio;
+- incremento de `quantity` si un servicio ya existe dentro de una reserva.
+
+### Repository
+
+Expone métodos de acceso a datos para la capa Service.
+
+No contiene reglas de negocio ni conoce Express.
+
+### DAO
+
+Es la única capa que accede directamente a los archivos JSON mediante `fs/promises`.
 
 ## Estructura
 
@@ -26,9 +71,15 @@ src/
 ├── controllers/
 │   ├── services.controller.js
 │   └── bookings.controller.js
-├── managers/
-│   ├── ServiceManager.js
-│   └── BookingManager.js
+├── services/
+│   ├── services.service.js
+│   └── bookings.service.js
+├── repositories/
+│   ├── services.repository.js
+│   └── bookings.repository.js
+├── dao/
+│   ├── services.dao.js
+│   └── bookings.dao.js
 ├── routes/
 │   ├── services.router.js
 │   └── bookings.router.js
@@ -54,7 +105,7 @@ PORT=8080
 NODE_ENV=development
 ```
 
-`.env` no debe subirse al repositorio.
+El archivo `.env` no debe subirse a GitHub.
 
 ## Ejecución
 
@@ -62,13 +113,13 @@ NODE_ENV=development
 npm start
 ```
 
-o en desarrollo:
+Modo desarrollo:
 
 ```bash
 npm run dev
 ```
 
-## Endpoints de servicios
+## Endpoints de services
 
 ```text
 GET    /api/services
@@ -78,14 +129,14 @@ PUT    /api/services/:sid
 DELETE /api/services/:sid
 ```
 
-`GET /api/services` acepta los filtros:
+También se mantienen los filtros:
 
 ```text
-?category=salud
-?available=true
+GET /api/services?category=salud
+GET /api/services?available=true
 ```
 
-## Endpoints de reservas
+## Endpoints de bookings
 
 ```text
 POST /api/bookings
@@ -93,49 +144,101 @@ GET  /api/bookings/:bid
 POST /api/bookings/:bid/services/:sid
 ```
 
-En `addServiceToBooking` el controller valida que la reserva y el servicio existan antes de llamar al manager.
+## Regla de negocio de reservas
 
-Si el mismo servicio ya existe dentro de una reserva, se incrementa `quantity`.
+Los servicios de una reserva se almacenan de esta forma:
 
-## Separación de responsabilidades
+```json
+{
+  "service": 1,
+  "quantity": 1
+}
+```
 
-### Routers
+Si el servicio `1` se agrega nuevamente, `bookings.service.js` incrementa la cantidad:
 
-Los archivos dentro de `routes/` solo relacionan el método HTTP y la URL con una función controller.
+```json
+{
+  "service": 1,
+  "quantity": 2
+}
+```
 
-No contienen acceso a archivos JSON ni reglas de datos.
+Esta regla está implementada en la capa **Service**, no en Repository ni DAO.
 
-### Controllers
+## Funciones principales
 
-Los archivos dentro de `controllers/`:
+### Services
 
-- leen `req.params`;
-- leen `req.query`;
-- leen `req.body`;
-- llaman al manager correspondiente;
-- responden con `res.status().json()`.
+Controller y Service:
 
-### Managers
+```text
+getServices
+getServiceById
+createService
+updateService
+deleteService
+```
 
-Los managers:
+Repository y DAO:
 
-- no utilizan `req`;
-- no utilizan `res`;
-- leen y escriben los archivos JSON;
-- gestionan altas, consultas, modificaciones y eliminaciones.
+```text
+getAll
+getById
+create
+update
+delete
+```
+
+### Bookings
+
+Controller y Service:
+
+```text
+createBooking
+getBookingById
+addServiceToBooking
+```
+
+Repository y DAO:
+
+```text
+create
+getById
+update
+```
 
 ## Persistencia
 
-Los datos se almacenan en:
+Los únicos archivos que trabajan directamente con FileSystem son:
+
+```text
+src/dao/services.dao.js
+src/dao/bookings.dao.js
+```
+
+Los datos se guardan en:
 
 ```text
 src/data/services.json
 src/data/bookings.json
 ```
 
-## Archivos que no se suben a GitHub
+## GitHub
+
+No subir:
 
 ```text
 node_modules/
 .env
+```
+
+Sí subir:
+
+```text
+src/
+package.json
+.env.example
+.gitignore
+README.md
 ```

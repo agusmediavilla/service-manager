@@ -1,32 +1,18 @@
-import ServiceManager from '../managers/ServiceManager.js';
+import ServicesDAO from '../dao/services.dao.js';
+import ServicesRepository from '../repositories/services.repository.js';
+import ServicesService from '../services/services.service.js';
 
-const serviceManager = new ServiceManager();
+const servicesDAO = new ServicesDAO();
+const servicesRepository = new ServicesRepository(servicesDAO);
+const servicesService = new ServicesService(servicesRepository);
 
 export const getServices = async (req, res) => {
   try {
-    const services = await serviceManager.getServices();
-    const { category, available } = req.query;
-
-    let filteredServices = services;
-
-    if (category) {
-      filteredServices = filteredServices.filter(
-        service =>
-          service.category.toLowerCase() === String(category).toLowerCase()
-      );
-    }
-
-    if (available !== undefined) {
-      const availableValue = String(available).toLowerCase() === 'true';
-
-      filteredServices = filteredServices.filter(
-        service => service.available === availableValue
-      );
-    }
+    const services = await servicesService.getServices(req.query);
 
     return res.status(200).json({
       status: 'success',
-      payload: filteredServices
+      payload: services
     });
   } catch (error) {
     return res.status(500).json({
@@ -38,8 +24,7 @@ export const getServices = async (req, res) => {
 
 export const getServiceById = async (req, res) => {
   try {
-    const { sid } = req.params;
-    const service = await serviceManager.getServiceById(sid);
+    const service = await servicesService.getServiceById(req.params.sid);
 
     if (!service) {
       return res.status(404).json({
@@ -62,7 +47,7 @@ export const getServiceById = async (req, res) => {
 
 export const createService = async (req, res) => {
   try {
-    const newService = await serviceManager.addService(req.body);
+    const newService = await servicesService.createService(req.body);
 
     return res.status(201).json({
       status: 'success',
@@ -78,8 +63,10 @@ export const createService = async (req, res) => {
 
 export const updateService = async (req, res) => {
   try {
-    const { sid } = req.params;
-    const updatedService = await serviceManager.updateService(sid, req.body);
+    const updatedService = await servicesService.updateService(
+      req.params.sid,
+      req.body
+    );
 
     if (!updatedService) {
       return res.status(404).json({
@@ -102,8 +89,7 @@ export const updateService = async (req, res) => {
 
 export const deleteService = async (req, res) => {
   try {
-    const { sid } = req.params;
-    const deletedService = await serviceManager.deleteService(sid);
+    const deletedService = await servicesService.deleteService(req.params.sid);
 
     if (!deletedService) {
       return res.status(404).json({

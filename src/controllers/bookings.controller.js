@@ -1,12 +1,23 @@
-import BookingManager from '../managers/BookingManager.js';
-import ServiceManager from '../managers/ServiceManager.js';
+import BookingsDAO from '../dao/bookings.dao.js';
+import ServicesDAO from '../dao/services.dao.js';
+import BookingsRepository from '../repositories/bookings.repository.js';
+import ServicesRepository from '../repositories/services.repository.js';
+import BookingsService from '../services/bookings.service.js';
 
-const bookingManager = new BookingManager();
-const serviceManager = new ServiceManager();
+const bookingsDAO = new BookingsDAO();
+const servicesDAO = new ServicesDAO();
+
+const bookingsRepository = new BookingsRepository(bookingsDAO);
+const servicesRepository = new ServicesRepository(servicesDAO);
+
+const bookingsService = new BookingsService(
+  bookingsRepository,
+  servicesRepository
+);
 
 export const createBooking = async (req, res) => {
   try {
-    const newBooking = await bookingManager.createBooking(req.body);
+    const newBooking = await bookingsService.createBooking(req.body);
 
     return res.status(201).json({
       status: 'success',
@@ -22,8 +33,7 @@ export const createBooking = async (req, res) => {
 
 export const getBookingById = async (req, res) => {
   try {
-    const { bid } = req.params;
-    const booking = await bookingManager.getBookingById(bid);
+    const booking = await bookingsService.getBookingById(req.params.bid);
 
     if (!booking) {
       return res.status(404).json({
@@ -46,31 +56,28 @@ export const getBookingById = async (req, res) => {
 
 export const addServiceToBooking = async (req, res) => {
   try {
-    const { bid, sid } = req.params;
+    const result = await bookingsService.addServiceToBooking(
+      req.params.bid,
+      req.params.sid
+    );
 
-    const booking = await bookingManager.getBookingById(bid);
-
-    if (!booking) {
+    if (result.type === 'booking_not_found') {
       return res.status(404).json({
         status: 'error',
         message: 'Reserva no encontrada'
       });
     }
 
-    const service = await serviceManager.getServiceById(sid);
-
-    if (!service) {
+    if (result.type === 'service_not_found') {
       return res.status(404).json({
         status: 'error',
         message: 'Servicio no encontrado'
       });
     }
 
-    const updatedBooking = await bookingManager.addServiceToBooking(bid, sid);
-
     return res.status(200).json({
       status: 'success',
-      payload: updatedBooking
+      payload: result.data
     });
   } catch (error) {
     return res.status(500).json({
