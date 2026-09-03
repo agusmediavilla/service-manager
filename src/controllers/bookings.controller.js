@@ -17,11 +17,11 @@ const bookingsService = new BookingsService(
 
 export const createBooking = async (req, res) => {
   try {
-    const newBooking = await bookingsService.createBooking(req.body);
+    const booking = await bookingsService.createBooking(req.body);
 
     return res.status(201).json({
       status: 'success',
-      payload: newBooking
+      payload: booking
     });
   } catch (error) {
     return res.status(400).json({

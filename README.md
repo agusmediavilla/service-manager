@@ -1,13 +1,13 @@
-# Refactor del proyecto con arquitectura en capas, DAO y Repository
+# Migración a MongoDB con Mongoose
 
 Pre-entrega del **Sistema Backend de Turnos y Reservas**.
 
-Esta versión reorganiza la API existente utilizando una arquitectura en capas para desacoplar la lógica HTTP, las reglas de negocio y la persistencia.
+Esta versión migra la persistencia desde archivos JSON hacia **MongoDB Atlas** utilizando **Mongoose**, manteniendo los mismos endpoints y la arquitectura en capas.
 
-## Flujo de la aplicación
+## Arquitectura
 
 ```text
-Router
+Route
   ↓
 Controller
   ↓
@@ -17,57 +17,18 @@ Repository
   ↓
 DAO
   ↓
-Archivo JSON
+Mongoose / MongoDB Atlas
 ```
 
-## Responsabilidad de cada capa
-
-### Router
-
-Define las URLs y los métodos HTTP y los conecta con un controller.
-
-No contiene reglas de negocio ni acceso a archivos.
-
-### Controller
-
-Lee información de:
-
-- `req.params`
-- `req.query`
-- `req.body`
-
-Llama a la capa Service y construye la respuesta HTTP mediante `res.status().json()`.
-
-### Service
-
-Contiene las reglas de negocio.
-
-No utiliza `req` ni `res` y tampoco accede directamente a archivos JSON.
-
-Ejemplos:
-
-- validación de campos obligatorios;
-- generación automática de IDs;
-- protección del `id` al actualizar un servicio;
-- validación de reserva y servicio;
-- incremento de `quantity` si un servicio ya existe dentro de una reserva.
-
-### Repository
-
-Expone métodos de acceso a datos para la capa Service.
-
-No contiene reglas de negocio ni conoce Express.
-
-### DAO
-
-Es la única capa que accede directamente a los archivos JSON mediante `fs/promises`.
+La migración cambia únicamente la persistencia. La API mantiene el mismo comportamiento externo.
 
 ## Estructura
 
 ```text
 src/
 ├── config/
-│   └── env.config.js
+│   ├── env.config.js
+│   └── db.config.js
 ├── controllers/
 │   ├── services.controller.js
 │   └── bookings.controller.js
@@ -80,12 +41,13 @@ src/
 ├── dao/
 │   ├── services.dao.js
 │   └── bookings.dao.js
+├── models/
+│   ├── service.model.js
+│   ├── booking.model.js
+│   └── message.model.js
 ├── routes/
 │   ├── services.router.js
 │   └── bookings.router.js
-├── data/
-│   ├── services.json
-│   └── bookings.json
 ├── app.js
 └── server.js
 ```
@@ -98,25 +60,90 @@ npm install
 
 ## Variables de entorno
 
-Crear un archivo `.env` en la raíz:
+Crear un archivo `.env`:
 
 ```env
 PORT=8080
 NODE_ENV=development
+MONGO_URI=mongodb+srv://USUARIO:PASSWORD@CLUSTER.mongodb.net/turnos
 ```
 
-El archivo `.env` no debe subirse a GitHub.
+No subir `.env` al repositorio.
 
-## Ejecución
+`.env.example` contiene únicamente los nombres de las variables:
 
-```bash
-npm start
+```env
+PORT=
+NODE_ENV=
+MONGO_URI=
 ```
 
-Modo desarrollo:
+## MongoDB Atlas
 
-```bash
-npm run dev
+Para ejecutar el proyecto se necesita una base de datos de MongoDB Atlas.
+
+Pasos generales:
+
+1. Crear un cluster.
+2. Crear un usuario de base de datos.
+3. Configurar Network Access.
+4. Copiar la connection string.
+5. Guardarla en `MONGO_URI` dentro de `.env`.
+
+Nunca guardar la URI real dentro del código o del repositorio.
+
+## Modelos
+
+### Service
+
+Campos:
+
+```text
+name
+description
+duration
+price
+category
+available
+```
+
+MongoDB genera `_id` automáticamente.
+
+### Booking
+
+Campos:
+
+```text
+clientName
+clientEmail
+date
+time
+status
+services
+```
+
+Los servicios se almacenan como referencias:
+
+```js
+services: [
+  {
+    service: ObjectId,
+    quantity: Number
+  }
+]
+```
+
+El campo `service` referencia al modelo `Service`.
+
+### Message
+
+Modelo separado requerido para el recurso `messages`.
+
+Campos:
+
+```text
+user
+message
 ```
 
 ## Endpoints de services
@@ -129,7 +156,7 @@ PUT    /api/services/:sid
 DELETE /api/services/:sid
 ```
 
-También se mantienen los filtros:
+Filtros disponibles:
 
 ```text
 GET /api/services?category=salud
@@ -146,82 +173,70 @@ POST /api/bookings/:bid/services/:sid
 
 ## Regla de negocio de reservas
 
-Los servicios de una reserva se almacenan de esta forma:
+Cuando se agrega un servicio a una reserva:
+
+1. se valida que exista la reserva;
+2. se valida que exista el servicio;
+3. se almacena únicamente su `ObjectId`;
+4. si ese servicio ya estaba en la reserva, se incrementa `quantity`.
+
+Ejemplo:
 
 ```json
 {
-  "service": 1,
-  "quantity": 1
+  "services": [
+    {
+      "service": "66a123456789abcdef123456",
+      "quantity": 2
+    }
+  ]
 }
 ```
 
-Si el servicio `1` se agrega nuevamente, `bookings.service.js` incrementa la cantidad:
+La lógica de incremento permanece en:
 
-```json
-{
-  "service": 1,
-  "quantity": 2
-}
+```text
+src/services/bookings.service.js
 ```
 
-Esta regla está implementada en la capa **Service**, no en Repository ni DAO.
+No está implementada en el DAO.
 
-## Funciones principales
+## Separación de responsabilidades
+
+### Routes
+
+Definen los endpoints.
+
+### Controllers
+
+Trabajan con `req` y `res`.
 
 ### Services
 
-Controller y Service:
+Contienen reglas de negocio.
 
-```text
-getServices
-getServiceById
-createService
-updateService
-deleteService
+### Repositories
+
+Desacoplan la lógica de negocio de la persistencia.
+
+### DAO
+
+Utilizan los modelos de Mongoose para consultar MongoDB.
+
+### Models
+
+Definen los schemas y modelos de Mongoose.
+
+## Ejecución
+
+```bash
+npm start
 ```
 
-Repository y DAO:
+Modo desarrollo:
 
-```text
-getAll
-getById
-create
-update
-delete
-```
-
-### Bookings
-
-Controller y Service:
-
-```text
-createBooking
-getBookingById
-addServiceToBooking
-```
-
-Repository y DAO:
-
-```text
-create
-getById
-update
-```
-
-## Persistencia
-
-Los únicos archivos que trabajan directamente con FileSystem son:
-
-```text
-src/dao/services.dao.js
-src/dao/bookings.dao.js
-```
-
-Los datos se guardan en:
-
-```text
-src/data/services.json
-src/data/bookings.json
+```bash
+npm run dev
 ```
 
 ## GitHub

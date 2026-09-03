@@ -1,33 +1,26 @@
+import mongoose from 'mongoose';
+
 export default class ServicesService {
   constructor(repository) {
     this.repository = repository;
   }
 
   async getServices(filters = {}) {
-    const services = await this.repository.getAll();
-    const { category, available } = filters;
+    const mongoFilters = {};
 
-    let filteredServices = services;
-
-    if (category) {
-      filteredServices = filteredServices.filter(
-        service =>
-          service.category.toLowerCase() === String(category).toLowerCase()
-      );
+    if (filters.category) {
+      mongoFilters.category = filters.category;
     }
 
-    if (available !== undefined) {
-      const availableValue = String(available).toLowerCase() === 'true';
-
-      filteredServices = filteredServices.filter(
-        service => service.available === availableValue
-      );
+    if (filters.available !== undefined) {
+      mongoFilters.available = String(filters.available).toLowerCase() === 'true';
     }
 
-    return filteredServices;
+    return this.repository.getAll(mongoFilters);
   }
 
   async getServiceById(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
     return this.repository.getById(id);
   }
 
@@ -53,42 +46,32 @@ export default class ServicesService {
       throw new Error(`Faltan campos obligatorios: ${missingFields.join(', ')}`);
     }
 
-    const services = await this.repository.getAll();
-    const newId =
-      services.length > 0
-        ? Math.max(...services.map(service => Number(service.id))) + 1
-        : 1;
+    const {
+      id,
+      _id,
+      ...safeData
+    } = serviceData;
 
-    const newService = {
-      id: newId,
-      name: serviceData.name,
-      description: serviceData.description,
-      duration: serviceData.duration,
-      price: serviceData.price,
-      category: serviceData.category,
-      available: serviceData.available
-    };
-
-    return this.repository.create(newService);
+    return this.repository.create(safeData);
   }
 
   async updateService(id, updatedData) {
-    const existingService = await this.repository.getById(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
 
+    const existingService = await this.repository.getById(id);
     if (!existingService) return null;
 
-    const { id: ignoredId, ...safeData } = updatedData;
+    const {
+      id: ignoredId,
+      _id: ignoredMongoId,
+      ...safeData
+    } = updatedData;
 
-    const updatedService = {
-      ...existingService,
-      ...safeData,
-      id: existingService.id
-    };
-
-    return this.repository.update(id, updatedService);
+    return this.repository.update(id, safeData);
   }
 
   async deleteService(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
     return this.repository.delete(id);
   }
 }

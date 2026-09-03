@@ -3,20 +3,20 @@ export default class ServicesRepository {
     this.dao = dao;
   }
 
-  async getAll() {
-    return this.dao.getAll();
+  async getAll(filters = {}) {
+    return this.dao.getAll(filters);
   }
 
   async getById(id) {
     return this.dao.getById(id);
   }
 
-  async create(service) {
-    return this.dao.create(service);
+  async create(data) {
+    return this.dao.create(data);
   }
 
-  async update(id, service) {
-    return this.dao.update(id, service);
+  async update(id, data) {
+    return this.dao.update(id, data);
   }
 
   async delete(id) {

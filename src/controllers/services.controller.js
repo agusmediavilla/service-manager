@@ -47,11 +47,11 @@ export const getServiceById = async (req, res) => {
 
 export const createService = async (req, res) => {
   try {
-    const newService = await servicesService.createService(req.body);
+    const service = await servicesService.createService(req.body);
 
     return res.status(201).json({
       status: 'success',
-      payload: newService
+      payload: service
     });
   } catch (error) {
     return res.status(400).json({
@@ -63,12 +63,12 @@ export const createService = async (req, res) => {
 
 export const updateService = async (req, res) => {
   try {
-    const updatedService = await servicesService.updateService(
+    const service = await servicesService.updateService(
       req.params.sid,
       req.body
     );
 
-    if (!updatedService) {
+    if (!service) {
       return res.status(404).json({
         status: 'error',
         message: 'Servicio no encontrado'
@@ -77,7 +77,7 @@ export const updateService = async (req, res) => {
 
     return res.status(200).json({
       status: 'success',
-      payload: updatedService
+      payload: service
     });
   } catch (error) {
     return res.status(400).json({
@@ -89,9 +89,9 @@ export const updateService = async (req, res) => {
 
 export const deleteService = async (req, res) => {
   try {
-    const deletedService = await servicesService.deleteService(req.params.sid);
+    const service = await servicesService.deleteService(req.params.sid);
 
-    if (!deletedService) {
+    if (!service) {
       return res.status(404).json({
         status: 'error',
         message: 'Servicio no encontrado'
@@ -100,7 +100,7 @@ export const deleteService = async (req, res) => {
 
     return res.status(200).json({
       status: 'success',
-      payload: deletedService
+      payload: service
     });
   } catch (error) {
     return res.status(500).json({

@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 export default class BookingsService {
   constructor(bookingsRepository, servicesRepository) {
     this.bookingsRepository = bookingsRepository;
@@ -25,14 +27,7 @@ export default class BookingsService {
       throw new Error(`Faltan campos obligatorios: ${missingFields.join(', ')}`);
     }
 
-    const bookings = await this.bookingsRepository.getAll();
-    const newId =
-      bookings.length > 0
-        ? Math.max(...bookings.map(booking => Number(booking.id))) + 1
-        : 1;
-
     const newBooking = {
-      id: newId,
       clientName: bookingData.clientName,
       clientEmail: bookingData.clientEmail,
       date: bookingData.date,
@@ -45,46 +40,47 @@ export default class BookingsService {
   }
 
   async getBookingById(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
     return this.bookingsRepository.getById(id);
   }
 
   async addServiceToBooking(bookingId, serviceId) {
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return { type: 'booking_not_found', data: null };
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(serviceId)) {
+      return { type: 'service_not_found', data: null };
+    }
+
     const booking = await this.bookingsRepository.getById(bookingId);
 
     if (!booking) {
-      return {
-        type: 'booking_not_found',
-        data: null
-      };
+      return { type: 'booking_not_found', data: null };
     }
 
     const service = await this.servicesRepository.getById(serviceId);
 
     if (!service) {
-      return {
-        type: 'service_not_found',
-        data: null
-      };
+      return { type: 'service_not_found', data: null };
     }
 
-    const numericServiceId = Number(serviceId);
-
     const existingService = booking.services.find(
-      item => item.service === numericServiceId
+      item => item.service.toString() === serviceId
     );
 
     if (existingService) {
       existingService.quantity += 1;
     } else {
       booking.services.push({
-        service: numericServiceId,
+        service: serviceId,
         quantity: 1
       });
     }
 
     const updatedBooking = await this.bookingsRepository.update(
       bookingId,
-      booking
+      { services: booking.services }
     );
 
     return {
