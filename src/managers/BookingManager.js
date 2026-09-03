@@ -13,8 +13,7 @@ export default class BookingManager {
   async _readBookings() {
     try {
       const data = await fs.readFile(this.path, 'utf-8');
-      if (!data.trim()) return [];
-      return JSON.parse(data);
+      return data.trim() ? JSON.parse(data) : [];
     } catch (error) {
       if (error.code === 'ENOENT') {
         await fs.writeFile(this.path, '[]', 'utf-8');
@@ -25,11 +24,7 @@ export default class BookingManager {
   }
 
   async _writeBookings(bookings) {
-    await fs.writeFile(
-      this.path,
-      JSON.stringify(bookings, null, 2),
-      'utf-8'
-    );
+    await fs.writeFile(this.path, JSON.stringify(bookings, null, 2), 'utf-8');
   }
 
   async createBooking(bookingData) {
@@ -66,7 +61,7 @@ export default class BookingManager {
       date: bookingData.date,
       time: bookingData.time,
       status: bookingData.status,
-      services: Array.isArray(bookingData.services) ? bookingData.services : []
+      services: []
     };
 
     bookings.push(newBooking);
@@ -77,20 +72,18 @@ export default class BookingManager {
 
   async getBookingById(id) {
     const bookings = await this._readBookings();
-    const numericId = Number(id);
-    return bookings.find(booking => booking.id === numericId) ?? null;
+    return bookings.find(booking => booking.id === Number(id)) ?? null;
   }
 
   async addServiceToBooking(bookingId, serviceId) {
     const bookings = await this._readBookings();
-    const numericBookingId = Number(bookingId);
-    const numericServiceId = Number(serviceId);
-
     const index = bookings.findIndex(
-      booking => booking.id === numericBookingId
+      booking => booking.id === Number(bookingId)
     );
 
     if (index === -1) return null;
+
+    const numericServiceId = Number(serviceId);
 
     const existingService = bookings[index].services.find(
       item => item.service === numericServiceId

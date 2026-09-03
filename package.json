@@ -1,22 +1,13 @@
 {
-  "name": "api-servicios-reservas-filesystem",
+  "name": "api-routers-controllers",
   "version": "1.0.0",
-  "description": "API REST de servicios y reservas con Node.js, Express y FileSystem",
+  "description": "API de servicios y reservas organizada con Routers, Controllers y Managers",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },
-  "keywords": [
-    "node",
-    "express",
-    "filesystem",
-    "services",
-    "bookings"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^5.1.0"

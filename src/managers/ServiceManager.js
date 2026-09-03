@@ -13,8 +13,7 @@ export default class ServiceManager {
   async _readServices() {
     try {
       const data = await fs.readFile(this.path, 'utf-8');
-      if (!data.trim()) return [];
-      return JSON.parse(data);
+      return data.trim() ? JSON.parse(data) : [];
     } catch (error) {
       if (error.code === 'ENOENT') {
         await fs.writeFile(this.path, '[]', 'utf-8');
@@ -25,21 +24,16 @@ export default class ServiceManager {
   }
 
   async _writeServices(services) {
-    await fs.writeFile(
-      this.path,
-      JSON.stringify(services, null, 2),
-      'utf-8'
-    );
+    await fs.writeFile(this.path, JSON.stringify(services, null, 2), 'utf-8');
   }
 
   async getServices() {
-    return await this._readServices();
+    return this._readServices();
   }
 
   async getServiceById(id) {
     const services = await this._readServices();
-    const numericId = Number(id);
-    return services.find(service => service.id === numericId) ?? null;
+    return services.find(service => service.id === Number(id)) ?? null;
   }
 
   async addService(serviceData) {
@@ -88,9 +82,8 @@ export default class ServiceManager {
 
   async updateService(id, updatedData) {
     const services = await this._readServices();
-    const numericId = Number(id);
+    const index = services.findIndex(service => service.id === Number(id));
 
-    const index = services.findIndex(service => service.id === numericId);
     if (index === -1) return null;
 
     const { id: ignoredId, ...safeData } = updatedData;
@@ -107,9 +100,8 @@ export default class ServiceManager {
 
   async deleteService(id) {
     const services = await this._readServices();
-    const numericId = Number(id);
+    const index = services.findIndex(service => service.id === Number(id));
 
-    const index = services.findIndex(service => service.id === numericId);
     if (index === -1) return null;
 
     const [deletedService] = services.splice(index, 1);
