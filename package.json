@@ -1,14 +1,20 @@
 {
-  "name": "service-manager-rest",
+  "name": "api-servicios-reservas-filesystem",
   "version": "1.0.0",
-  "description": "API REST de servicios para un sistema de turnos y reservas",
+  "description": "API REST de servicios y reservas con Node.js, Express y FileSystem",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },
-  "keywords": ["node", "express", "rest", "services", "turnos"],
+  "keywords": [
+    "node",
+    "express",
+    "filesystem",
+    "services",
+    "bookings"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {

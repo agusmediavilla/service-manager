@@ -6,44 +6,58 @@ const serviceManager = new ServiceManager();
 
 router.get('/', async (req, res) => {
   try {
+    const services = await serviceManager.getServices();
+
     const { category, available } = req.query;
-    let services = await serviceManager.getServices();
+    let filteredServices = services;
 
     if (category) {
-      services = services.filter(
-        (service) => service.category.toLowerCase() === String(category).toLowerCase()
+      filteredServices = filteredServices.filter(
+        service =>
+          service.category.toLowerCase() === String(category).toLowerCase()
       );
     }
 
     if (available !== undefined) {
-      const availableBoolean = String(available).toLowerCase() === 'true';
-      services = services.filter((service) => service.available === availableBoolean);
+      const availableValue = String(available).toLowerCase() === 'true';
+
+      filteredServices = filteredServices.filter(
+        service => service.available === availableValue
+      );
     }
 
     return res.status(200).json({
       status: 'success',
-      payload: services,
+      payload: filteredServices
     });
   } catch (error) {
-    return res.status(500).json({ status: 'error', message: error.message });
+    return res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
 });
 
 router.get('/:sid', async (req, res) => {
   try {
-    const { sid } = req.params;
-    const service = await serviceManager.getServiceById(sid);
+    const service = await serviceManager.getServiceById(req.params.sid);
 
     if (!service) {
       return res.status(404).json({
         status: 'error',
-        message: 'Servicio no encontrado',
+        message: 'Servicio no encontrado'
       });
     }
 
-    return res.status(200).json({ status: 'success', payload: service });
+    return res.status(200).json({
+      status: 'success',
+      payload: service
+    });
   } catch (error) {
-    return res.status(500).json({ status: 'error', message: error.message });
+    return res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
 });
 
@@ -53,55 +67,62 @@ router.post('/', async (req, res) => {
 
     return res.status(201).json({
       status: 'success',
-      payload: newService,
+      payload: newService
     });
   } catch (error) {
     return res.status(400).json({
       status: 'error',
-      message: error.message,
+      message: error.message
     });
   }
 });
 
 router.put('/:sid', async (req, res) => {
   try {
-    const { sid } = req.params;
-    const updatedService = await serviceManager.updateService(sid, req.body);
+    const updatedService = await serviceManager.updateService(
+      req.params.sid,
+      req.body
+    );
 
     if (!updatedService) {
       return res.status(404).json({
         status: 'error',
-        message: 'Servicio no encontrado',
+        message: 'Servicio no encontrado'
       });
     }
 
     return res.status(200).json({
       status: 'success',
-      payload: updatedService,
+      payload: updatedService
     });
   } catch (error) {
-    return res.status(500).json({ status: 'error', message: error.message });
+    return res.status(400).json({
+      status: 'error',
+      message: error.message
+    });
   }
 });
 
 router.delete('/:sid', async (req, res) => {
   try {
-    const { sid } = req.params;
-    const deletedService = await serviceManager.deleteService(sid);
+    const deletedService = await serviceManager.deleteService(req.params.sid);
 
     if (!deletedService) {
       return res.status(404).json({
         status: 'error',
-        message: 'Servicio no encontrado',
+        message: 'Servicio no encontrado'
       });
     }
 
     return res.status(200).json({
       status: 'success',
-      payload: deletedService,
+      payload: deletedService
     });
   } catch (error) {
-    return res.status(500).json({ status: 'error', message: error.message });
+    return res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
 });
 

@@ -1,7 +1,8 @@
 import app from './app.js';
-import env from './config/env.config.js';
+import config from './config/env.config.js';
 
-app.listen(env.port, () => {
-  console.log(`Servidor escuchando en http://localhost:${env.port}`);
-  console.log(`Entorno: ${env.nodeEnv}`);
+app.listen(config.port, () => {
+  console.log(
+    `Servidor ejecutándose en http://localhost:${config.port} - ${config.nodeEnv}`
+  );
 });

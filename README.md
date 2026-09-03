@@ -1,14 +1,36 @@
-# Diseño de endpoints REST para servicios
+# API inicial de servicios y reservas con FileSystem
 
-API REST desarrollada con Node.js y Express para gestionar el recurso `services` de un sistema de turnos y reservas.
+Proyecto desarrollado con **Node.js**, **Express**, **ESM** y **FileSystem** para gestionar servicios y reservas de un sistema de turnos.
+
+La información se persiste en archivos JSON, por lo que los datos se conservan aunque el servidor se reinicie.
 
 ## Tecnologías
 
 - Node.js
 - Express
-- ESM (`import` / `export`)
+- JavaScript ESM
 - dotenv
-- FileSystem con archivo JSON
+- FileSystem (`fs/promises`)
+- JSON
+
+## Estructura
+
+```text
+src/
+├── app.js
+├── server.js
+├── config/
+│   └── env.config.js
+├── managers/
+│   ├── ServiceManager.js
+│   └── BookingManager.js
+├── routes/
+│   ├── services.router.js
+│   └── bookings.router.js
+└── data/
+    ├── services.json
+    └── bookings.json
+```
 
 ## Instalación
 
@@ -18,16 +40,18 @@ npm install
 
 ## Variables de entorno
 
-Crear un archivo `.env` en la raíz del proyecto con:
+Crear un archivo `.env` en la raíz del proyecto:
 
 ```env
 PORT=8080
 NODE_ENV=development
 ```
 
-El archivo `.env` no debe subirse al repositorio. Se incluye `.env.example` como referencia.
+El archivo `.env` no debe subirse al repositorio.
 
 ## Ejecución
+
+Modo normal:
 
 ```bash
 npm start
@@ -39,73 +63,72 @@ Modo desarrollo:
 npm run dev
 ```
 
-## Recurso `services`
+Servidor:
 
-Cada servicio tiene la siguiente estructura:
+```text
+http://localhost:8080
+```
+
+# Recurso services
+
+Cada servicio tiene la forma:
 
 ```json
 {
   "id": 1,
   "name": "Consulta general",
-  "description": "Consulta inicial de evaluación",
+  "description": "Consulta de 30 minutos",
   "duration": 30,
-  "price": 12000,
+  "price": 15000,
   "category": "salud",
   "available": true
 }
 ```
 
-El `id` se genera automáticamente al crear un servicio.
+## Endpoints de servicios
 
-## Endpoints
-
-### Obtener todos los servicios
+### Obtener todos
 
 ```http
 GET /api/services
 ```
 
-Filtros disponibles:
+También permite filtros:
 
 ```http
 GET /api/services?category=salud
 GET /api/services?available=true
-GET /api/services?category=salud&available=true
 ```
 
-### Obtener un servicio por ID
+### Obtener por ID
 
 ```http
 GET /api/services/:sid
 ```
 
-Devuelve `200` si existe y `404` si no existe.
-
-### Crear un servicio
+### Crear servicio
 
 ```http
 POST /api/services
 Content-Type: application/json
 ```
 
-Ejemplo de body:
+Body:
 
 ```json
 {
-  "name": "Masaje deportivo",
-  "description": "Sesión de recuperación muscular",
-  "duration": 60,
-  "price": 20000,
-  "category": "bienestar",
+  "name": "Consulta general",
+  "description": "Consulta de 30 minutos",
+  "duration": 30,
+  "price": 15000,
+  "category": "salud",
   "available": true
 }
 ```
 
-No se debe enviar `id`. El servidor lo genera automáticamente.
+El `id` se genera automáticamente.
 
-Devuelve `201` si se crea correctamente y `400` si faltan campos obligatorios.
-
-### Actualizar un servicio
+### Actualizar servicio
 
 ```http
 PUT /api/services/:sid
@@ -116,35 +139,119 @@ Ejemplo:
 
 ```json
 {
-  "price": 22000,
+  "price": 18000,
   "available": false
 }
 ```
 
-Si se envía un campo `id`, el manager lo ignora y conserva el identificador original.
+El `id` no puede modificarse.
 
-Devuelve `200` si existe y `404` si no existe.
-
-### Eliminar un servicio
+### Eliminar servicio
 
 ```http
 DELETE /api/services/:sid
 ```
 
-Devuelve `200` si se elimina y `404` si el servicio no existe.
+# Recurso bookings
 
-## Organización
+Cada reserva tiene la forma:
 
-- `src/routes/services.router.js`: define los endpoints y utiliza `req.params`, `req.query` y `req.body`.
-- `src/managers/ServiceManager.js`: contiene la lógica de gestión y persistencia de servicios.
-- `src/app.js`: configura Express y monta el router.
-- `src/server.js`: levanta el servidor usando el puerto definido en `.env`.
-- `src/config/env.config.js`: carga y valida las variables de entorno.
+```json
+{
+  "id": 1,
+  "clientName": "Juan Perez",
+  "clientEmail": "juan@email.com",
+  "date": "2026-09-10",
+  "time": "10:00",
+  "status": "pending",
+  "services": []
+}
+```
+
+## Crear reserva
+
+```http
+POST /api/bookings
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "clientName": "Juan Perez",
+  "clientEmail": "juan@email.com",
+  "date": "2026-09-10",
+  "time": "10:00",
+  "status": "pending"
+}
+```
+
+La reserva puede iniciarse con `services: []`.
+
+## Obtener reserva por ID
+
+```http
+GET /api/bookings/:bid
+```
+
+## Agregar servicio a una reserva
+
+```http
+POST /api/bookings/:bid/services/:sid
+```
+
+Antes de agregarlo se valida que:
+
+- la reserva exista;
+- el servicio exista.
+
+Dentro de la reserva se almacena solamente:
+
+```json
+{
+  "service": 1,
+  "quantity": 1
+}
+```
+
+Si se vuelve a agregar el mismo servicio, no se duplica el objeto: se incrementa `quantity`.
+
+Ejemplo:
+
+```json
+{
+  "service": 1,
+  "quantity": 2
+}
+```
+
+## Persistencia
+
+Los datos se almacenan en:
+
+```text
+src/data/services.json
+src/data/bookings.json
+```
+
+Se utiliza `fs/promises` con `async/await` para leer y escribir los archivos de forma asíncrona.
 
 ## GitHub
 
-No subir al repositorio:
+El repositorio no debe incluir:
 
-- `node_modules/`
-- `.env`
-- credenciales reales
+```text
+node_modules/
+.env
+```
+
+Sí debe incluir:
+
+```text
+.env.example
+.gitignore
+README.md
+package.json
+src/
+```
