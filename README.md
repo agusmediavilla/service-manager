@@ -1,15 +1,8 @@
-# Consultas avanzadas, validación y relaciones con populate
+# Entrega Final: Sistema Backend de Turnos y Reservas
 
-Pre-entrega del **Sistema Backend de Turnos y Reservas**.
+Proyecto final del curso de Programación Backend.
 
-Esta versión profesionaliza la API incorporando:
-
-- filtros avanzados;
-- paginación;
-- ordenamiento;
-- validación previa con Zod;
-- relaciones entre reservas y servicios mediante `ObjectId`;
-- consultas de reservas con `populate`.
+Integra una API REST completa para administrar servicios y reservas utilizando Node.js, Express, MongoDB Atlas, Mongoose, Zod, Handlebars y Socket.io.
 
 ## Arquitectura
 
@@ -31,13 +24,13 @@ models
 MongoDB Atlas
 ```
 
-## Instalación
+La lógica de negocio se mantiene en `services/` y el acceso a datos en `dao/`.
+
+## Instalación rápida
 
 ```bash
 npm install
 ```
-
-## Variables de entorno
 
 Crear `.env`:
 
@@ -47,13 +40,66 @@ NODE_ENV=development
 MONGO_URI=mongodb+srv://USUARIO:PASSWORD@CLUSTER.mongodb.net/turnos
 ```
 
-No subir `.env`.
+Ejecutar:
 
----
+```bash
+npm start
+```
 
-# GET /api/services
+Abrir:
 
-Acepta:
+```text
+http://localhost:8080/views/services
+http://localhost:8080/views/bookings
+```
+
+## Estructura principal
+
+```text
+src/
+├── config/
+├── controllers/
+├── services/
+├── repositories/
+├── dao/
+├── models/
+├── routes/
+├── middlewares/
+├── validators/
+├── views/
+├── public/
+├── app.js
+└── server.js
+```
+
+## Servicios
+
+Endpoints:
+
+```text
+GET    /api/services
+GET    /api/services/:sid
+POST   /api/services
+PUT    /api/services/:sid
+DELETE /api/services/:sid
+```
+
+Ejemplo de creación:
+
+```json
+{
+  "name": "Consulta general",
+  "description": "Consulta de 30 minutos",
+  "duration": 30,
+  "price": 15000,
+  "category": "salud",
+  "available": true
+}
+```
+
+## Consultas avanzadas
+
+`GET /api/services` acepta:
 
 ```text
 category
@@ -64,145 +110,58 @@ sortBy
 order
 ```
 
-## Ejemplos
-
-Filtrar por categoría:
+Ejemplos:
 
 ```http
 GET /api/services?category=salud
-```
-
-Filtrar por disponibilidad:
-
-```http
 GET /api/services?available=true
-```
-
-Paginación:
-
-```http
 GET /api/services?page=2&limit=5
-```
-
-Ordenar por precio ascendente:
-
-```http
-GET /api/services?sortBy=price&order=asc
-```
-
-Ordenar por precio descendente:
-
-```http
 GET /api/services?sortBy=price&order=desc
-```
-
-Combinar consultas:
-
-```http
 GET /api/services?category=salud&available=true&page=1&limit=5&sortBy=price&order=asc
 ```
 
-## Respuesta
-
-Ejemplo:
+Respuesta:
 
 ```json
 {
   "status": "success",
   "payload": [],
   "pagination": {
-    "total": 24,
+    "total": 20,
     "page": 1,
     "limit": 5,
-    "totalPages": 5,
+    "totalPages": 4,
     "hasPrevPage": false,
     "hasNextPage": true
   }
 }
 ```
 
----
+## Reservas
 
-# Validaciones con Zod
-
-Se utilizan schemas independientes dentro de:
+Endpoints:
 
 ```text
-src/validators/
+POST /api/bookings
+GET  /api/bookings/:bid
+POST /api/bookings/:bid/services/:sid
 ```
 
-y middleware:
+Ejemplo:
 
-```text
-src/middlewares/validate.middleware.js
+```json
+{
+  "clientName": "Juan Perez",
+  "clientEmail": "juan@email.com",
+  "date": "2026-09-20",
+  "time": "10:00",
+  "status": "pending"
+}
 ```
 
-Las validaciones se ejecutan antes de llegar al controller y antes de acceder a MongoDB.
+## ObjectId y quantity
 
-## Crear servicio
-
-Valida:
-
-```text
-name
-description
-duration
-price
-category
-available
-```
-
-## Actualizar servicio
-
-Permite únicamente:
-
-```text
-name
-description
-duration
-price
-category
-available
-```
-
-No permite `_id` ni campos desconocidos.
-
-## Crear reserva
-
-Valida:
-
-```text
-clientName
-clientEmail
-date
-time
-status
-```
-
-Además valida formato correcto de email.
-
-## Agregar servicio a reserva
-
-Valida los parámetros:
-
-```text
-bid
-sid
-```
-
-Si la validación falla, responde:
-
-```http
-400 Bad Request
-```
-
-con un mensaje descriptivo.
-
----
-
-# Reservas y populate
-
-Las reservas guardan servicios así:
+Las reservas guardan solo referencias:
 
 ```js
 services: [
@@ -213,72 +172,80 @@ services: [
 ]
 ```
 
-No se guarda el objeto completo.
+Nunca se persiste el objeto completo del servicio.
 
-Cuando se consulta:
+Si el mismo servicio se agrega dos veces, `quantity` se incrementa en `bookings.service.js`.
 
-```http
-GET /api/bookings/:bid
-```
+## Populate
 
-el DAO utiliza:
+`GET /api/bookings/:bid` usa `populate` sobre:
 
 ```js
-.populate({
-  path: 'services.service',
-  select: 'name description duration price category available'
-})
+services.service
 ```
 
-Por lo tanto la respuesta contiene los datos completos del servicio asociado.
+y devuelve datos completos de los servicios relacionados.
 
-Ejemplo conceptual:
+## Validación con Zod
 
-```json
-{
-  "status": "success",
-  "payload": {
-    "_id": "BOOKING_ID",
-    "clientName": "Juan Pérez",
-    "clientEmail": "juan@email.com",
-    "date": "2026-09-10",
-    "time": "10:00",
-    "status": "pending",
-    "services": [
-      {
-        "service": {
-          "_id": "SERVICE_ID",
-          "name": "Consulta general",
-          "description": "Consulta de 30 minutos",
-          "duration": 30,
-          "price": 15000,
-          "category": "salud",
-          "available": true
-        },
-        "quantity": 2
-      }
-    ]
-  }
-}
-```
-
----
-
-# Endpoints existentes
-
-Se mantienen:
+Se valida antes de llegar a MongoDB:
 
 ```text
-GET    /api/services
-GET    /api/services/:sid
-POST   /api/services
-PUT    /api/services/:sid
-DELETE /api/services/:sid
-
-POST   /api/bookings
-GET    /api/bookings/:bid
-POST   /api/bookings/:bid/services/:sid
+POST /api/services
+PUT  /api/services/:sid
+POST /api/bookings
+POST /api/bookings/:bid/services/:sid
 ```
+
+Los schemas están en:
+
+```text
+src/validators/
+```
+
+y el middleware en:
+
+```text
+src/middlewares/validate.middleware.js
+```
+
+## Handlebars
+
+Vistas:
+
+```text
+GET /views/services
+GET /views/bookings
+```
+
+Los datos salen de MongoDB a través de la arquitectura existente.
+
+## Socket.io
+
+Eventos implementados:
+
+```text
+serviceCreated
+serviceUpdated
+serviceDeleted
+bookingCreated
+bookingUpdated
+```
+
+Ejemplo: al crear un servicio con `POST /api/services`, la vista `/views/services` se actualiza sin recargar.
+
+## Cómo probar rápido
+
+1. `npm install`
+2. Crear `.env`
+3. `npm start`
+4. Abrir `/views/services`
+5. Crear un servicio con `POST /api/services`
+6. Ver que aparece sin recargar
+7. Crear una reserva con `POST /api/bookings`
+8. Asociar un servicio con `POST /api/bookings/:bid/services/:sid`
+9. Consultar `GET /api/bookings/:bid` y verificar el `populate`
+10. Probar `GET /api/services?page=1&limit=5&sortBy=price&order=desc`
 
 ## GitHub
 
@@ -298,3 +265,5 @@ package.json
 .gitignore
 README.md
 ```
+
+La entrega debe realizarse con la URL pública del repositorio.

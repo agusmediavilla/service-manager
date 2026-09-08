@@ -18,6 +18,10 @@ export default class BookingsService {
     return this.bookingsRepository.getById(id);
   }
 
+  async getBookings() {
+    return this.bookingsRepository.getAll();
+  }
+
   async addServiceToBooking(bookingId, serviceId) {
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
       return { type: 'booking_not_found', data: null };

@@ -23,7 +23,7 @@ const bookingSchema = new mongoose.Schema(
     clientEmail: { type: String, required: true, trim: true, lowercase: true },
     date: { type: String, required: true },
     time: { type: String, required: true },
-    status: { type: String, required: true },
+    status: { type: String, required: true, trim: true },
     services: { type: [bookingServiceSchema], default: [] }
   },
   { timestamps: true }

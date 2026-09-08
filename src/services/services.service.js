@@ -37,11 +37,9 @@ export default class ServicesService {
 
     const currentPage = Math.max(Number(page) || 1, 1);
     const currentLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
-
     const validSortBy = ALLOWED_SORT_FIELDS.includes(sortBy)
       ? sortBy
       : 'createdAt';
-
     const validOrder = order === 'desc' ? 'desc' : 'asc';
 
     const { docs, total } = await this.repository.getAll({

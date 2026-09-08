@@ -4,18 +4,21 @@ import BookingsRepository from '../repositories/bookings.repository.js';
 import ServicesRepository from '../repositories/services.repository.js';
 import BookingsService from '../services/bookings.service.js';
 
-const service = new BookingsService(
+const bookingsService = new BookingsService(
   new BookingsRepository(new BookingsDAO()),
   new ServicesRepository(new ServicesDAO())
 );
 
 export const createBooking = async (req, res) => {
   try {
-    const data = await service.createBooking(req.body);
+    const booking = await bookingsService.createBooking(req.body);
+
+    const io = req.app.get('io');
+    if (io) io.emit('bookingCreated', booking);
 
     return res.status(201).json({
       status: 'success',
-      payload: data
+      payload: booking
     });
   } catch (error) {
     return res.status(500).json({
@@ -27,9 +30,9 @@ export const createBooking = async (req, res) => {
 
 export const getBookingById = async (req, res) => {
   try {
-    const data = await service.getBookingById(req.params.bid);
+    const booking = await bookingsService.getBookingById(req.params.bid);
 
-    if (!data) {
+    if (!booking) {
       return res.status(404).json({
         status: 'error',
         message: 'Reserva no encontrada'
@@ -38,7 +41,7 @@ export const getBookingById = async (req, res) => {
 
     return res.status(200).json({
       status: 'success',
-      payload: data
+      payload: booking
     });
   } catch (error) {
     return res.status(500).json({
@@ -50,7 +53,7 @@ export const getBookingById = async (req, res) => {
 
 export const addServiceToBooking = async (req, res) => {
   try {
-    const result = await service.addServiceToBooking(
+    const result = await bookingsService.addServiceToBooking(
       req.params.bid,
       req.params.sid
     );
@@ -68,6 +71,9 @@ export const addServiceToBooking = async (req, res) => {
         message: 'Servicio no encontrado'
       });
     }
+
+    const io = req.app.get('io');
+    if (io) io.emit('bookingUpdated', result.data);
 
     return res.status(200).json({
       status: 'success',

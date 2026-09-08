@@ -16,31 +16,31 @@ const bookingsService = new BookingsService(
 
 export const renderServices = async (req, res) => {
   try {
-    const services = await servicesService.getServices();
+    const result = await servicesService.getServices({
+      page: '1',
+      limit: '100',
+      sortBy: 'name',
+      order: 'asc'
+    });
 
     return res.render('services', {
       title: 'Servicios',
-      services
+      services: result.payload
     });
   } catch (error) {
     return res.status(500).send('Error al cargar los servicios');
   }
 };
 
-export const renderAvailability = async (req, res) => {
+export const renderBookings = async (req, res) => {
   try {
-    const availableServices = await servicesService.getServices({
-      available: 'true'
-    });
-
     const bookings = await bookingsService.getBookings();
 
-    return res.render('availability', {
-      title: 'Disponibilidad y reservas',
-      availableServices,
+    return res.render('bookings', {
+      title: 'Reservas',
       bookings
     });
   } catch (error) {
-    return res.status(500).send('Error al cargar disponibilidad');
+    return res.status(500).send('Error al cargar las reservas');
   }
 };

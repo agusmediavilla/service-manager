@@ -8,7 +8,7 @@ export const createBookingSchema = z.object({
   status: z.string().trim().min(1, 'status es obligatorio')
 }).strict();
 
-export const addServiceToBookingSchema = z.object({
+export const bookingServiceParamsSchema = z.object({
   bid: z.string().trim().min(1, 'bid es obligatorio'),
   sid: z.string().trim().min(1, 'sid es obligatorio')
 });

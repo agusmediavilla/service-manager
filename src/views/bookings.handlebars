@@ -1,0 +1,32 @@
+<section>
+  <div class="section-heading">
+    <div>
+      <h2>Reservas</h2>
+      <p>Reservas con servicios relacionados mediante populate.</p>
+    </div>
+  </div>
+
+  <div id="bookings-list" class="grid">
+    {{#each bookings}}
+      <article class="card" id="booking-{{this._id}}">
+        <h3>{{this.clientName}}</h3>
+        <p>{{this.clientEmail}}</p>
+        <p><strong>Fecha:</strong> {{this.date}}</p>
+        <p><strong>Hora:</strong> {{this.time}}</p>
+        <p><strong>Estado:</strong> {{this.status}}</p>
+
+        <h4>Servicios</h4>
+        {{#each this.services}}
+          <div class="service-line">
+            <strong>{{this.service.name}}</strong>
+            <span>x{{this.quantity}}</span>
+          </div>
+        {{else}}
+          <p>Sin servicios asociados.</p>
+        {{/each}}
+      </article>
+    {{else}}
+      <p id="empty-bookings">No hay reservas cargadas.</p>
+    {{/each}}
+  </div>
+</section>

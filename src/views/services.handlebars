@@ -1,6 +1,11 @@
 <section>
-  <h2>Servicios</h2>
-  <p>Listado obtenido desde MongoDB.</p>
+  <div class="section-heading">
+    <div>
+      <h2>Servicios</h2>
+      <p>Datos obtenidos desde MongoDB.</p>
+    </div>
+    <span class="badge">Tiempo real</span>
+  </div>
 
   <div id="services-list" class="grid">
     {{#each services}}
@@ -9,14 +14,11 @@
         <p>{{this.description}}</p>
         <dl>
           <dt>Duración</dt>
-          <dd>{{this.duration}} minutos</dd>
-
+          <dd>{{this.duration}} min</dd>
           <dt>Precio</dt>
           <dd>${{this.price}}</dd>
-
           <dt>Categoría</dt>
           <dd>{{this.category}}</dd>
-
           <dt>Disponible</dt>
           <dd>{{#if this.available}}Sí{{else}}No{{/if}}</dd>
         </dl>

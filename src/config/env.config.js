@@ -2,9 +2,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const requiredEnvVars = ['PORT', 'NODE_ENV', 'MONGO_URI'];
+const requiredVariables = ['PORT', 'NODE_ENV', 'MONGO_URI'];
 
-for (const variable of requiredEnvVars) {
+for (const variable of requiredVariables) {
   if (!process.env[variable]) {
     throw new Error(`Falta la variable de entorno requerida: ${variable}`);
   }

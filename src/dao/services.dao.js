@@ -1,13 +1,19 @@
 import ServiceModel from '../models/service.model.js';
 
 export default class ServicesDAO {
-  async getAll({ filters = {}, page = 1, limit = 10, sortBy = 'createdAt', order = 'asc' }) {
+  async getAll({
+    filters = {},
+    page = 1,
+    limit = 10,
+    sortBy = 'createdAt',
+    order = 'asc'
+  } = {}) {
     const skip = (page - 1) * limit;
-    const sortDirection = order === 'desc' ? -1 : 1;
+    const direction = order === 'desc' ? -1 : 1;
 
     const [docs, total] = await Promise.all([
       ServiceModel.find(filters)
-        .sort({ [sortBy]: sortDirection })
+        .sort({ [sortBy]: direction })
         .skip(skip)
         .limit(limit)
         .lean(),
@@ -22,8 +28,8 @@ export default class ServicesDAO {
   }
 
   async create(data) {
-    const service = await ServiceModel.create(data);
-    return service.toObject();
+    const document = await ServiceModel.create(data);
+    return document.toObject();
   }
 
   async update(id, data) {

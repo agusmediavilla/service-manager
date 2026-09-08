@@ -4,53 +4,25 @@ socket.on('serviceCreated', service => {
   const container = document.getElementById('services-list');
   if (!container) return;
 
-  const emptyMessage = document.getElementById('empty-services');
-  if (emptyMessage) emptyMessage.remove();
+  const empty = document.getElementById('empty-services');
+  if (empty) empty.remove();
 
-  const article = document.createElement('article');
-  article.className = 'card';
-  article.id = `service-${service._id}`;
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.id = `service-${service._id}`;
+  card.innerHTML = serviceCard(service);
 
-  article.innerHTML = `
-    <h3>${service.name}</h3>
-    <p>${service.description}</p>
-    <dl>
-      <dt>Duración</dt>
-      <dd>${service.duration} minutos</dd>
-      <dt>Precio</dt>
-      <dd>$${service.price}</dd>
-      <dt>Categoría</dt>
-      <dd>${service.category}</dd>
-      <dt>Disponible</dt>
-      <dd>${service.available ? 'Sí' : 'No'}</dd>
-    </dl>
-  `;
-
-  container.prepend(article);
+  container.prepend(card);
 });
 
 socket.on('serviceUpdated', service => {
   const card = document.getElementById(`service-${service._id}`);
   if (!card) return;
-
-  card.innerHTML = `
-    <h3>${service.name}</h3>
-    <p>${service.description}</p>
-    <dl>
-      <dt>Duración</dt>
-      <dd>${service.duration} minutos</dd>
-      <dt>Precio</dt>
-      <dd>$${service.price}</dd>
-      <dt>Categoría</dt>
-      <dd>${service.category}</dd>
-      <dt>Disponible</dt>
-      <dd>${service.available ? 'Sí' : 'No'}</dd>
-    </dl>
-  `;
+  card.innerHTML = serviceCard(service);
 });
 
-socket.on('serviceDeleted', payload => {
-  const card = document.getElementById(`service-${payload.id}`);
+socket.on('serviceDeleted', ({ id }) => {
+  const card = document.getElementById(`service-${id}`);
   if (card) card.remove();
 });
 
@@ -58,21 +30,46 @@ socket.on('bookingCreated', booking => {
   const container = document.getElementById('bookings-list');
   if (!container) return;
 
-  const emptyMessage = document.getElementById('empty-bookings');
-  if (emptyMessage) emptyMessage.remove();
+  const empty = document.getElementById('empty-bookings');
+  if (empty) empty.remove();
 
-  const article = document.createElement('article');
-  article.className = 'card';
-  article.id = `booking-${booking._id}`;
-
-  article.innerHTML = `
-    <h4>${booking.clientName}</h4>
-    <p>${booking.clientEmail}</p>
-    <p><strong>Fecha:</strong> ${booking.date}</p>
-    <p><strong>Hora:</strong> ${booking.time}</p>
-    <p><strong>Estado:</strong> ${booking.status}</p>
-    <p><strong>Servicios asociados:</strong> ${booking.services.length}</p>
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.id = `booking-${booking._id}`;
+  card.innerHTML = `
+    <h3>${escapeHtml(booking.clientName)}</h3>
+    <p>${escapeHtml(booking.clientEmail)}</p>
+    <p><strong>Fecha:</strong> ${escapeHtml(booking.date)}</p>
+    <p><strong>Hora:</strong> ${escapeHtml(booking.time)}</p>
+    <p><strong>Estado:</strong> ${escapeHtml(booking.status)}</p>
+    <h4>Servicios</h4>
+    <p>Sin servicios asociados.</p>
   `;
-
-  container.prepend(article);
+  container.prepend(card);
 });
+
+function serviceCard(service) {
+  return `
+    <h3>${escapeHtml(service.name)}</h3>
+    <p>${escapeHtml(service.description)}</p>
+    <dl>
+      <dt>Duración</dt>
+      <dd>${service.duration} min</dd>
+      <dt>Precio</dt>
+      <dd>$${service.price}</dd>
+      <dt>Categoría</dt>
+      <dd>${escapeHtml(service.category)}</dd>
+      <dt>Disponible</dt>
+      <dd>${service.available ? 'Sí' : 'No'}</dd>
+    </dl>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}

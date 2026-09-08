@@ -2,8 +2,8 @@ import BookingModel from '../models/booking.model.js';
 
 export default class BookingsDAO {
   async create(data) {
-    const booking = await BookingModel.create(data);
-    return booking.toObject();
+    const document = await BookingModel.create(data);
+    return document.toObject();
   }
 
   async getById(id) {
@@ -17,6 +17,16 @@ export default class BookingsDAO {
 
   async getByIdRaw(id) {
     return BookingModel.findById(id).lean();
+  }
+
+  async getAll() {
+    return BookingModel.find()
+      .populate({
+        path: 'services.service',
+        select: 'name description duration price category available'
+      })
+      .sort({ createdAt: -1 })
+      .lean();
   }
 
   async update(id, data) {

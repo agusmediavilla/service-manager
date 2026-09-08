@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import {
   renderServices,
-  renderAvailability
+  renderBookings
 } from '../controllers/views.controller.js';
 
 const router = Router();
 
 router.get('/services', renderServices);
-router.get('/availability', renderAvailability);
+router.get('/bookings', renderBookings);
 
 export default router;
